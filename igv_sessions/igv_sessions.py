@@ -24,6 +24,49 @@ def add_resources_to_igv_session(doc: minidom.Document, resource_list: List[Path
         resources.appendChild(rsc_element)
 
 
+def divider_frac_str(n: int) -> str:
+    output_str = ", ".join([str(x/n) for x in range(1 + n)])
+    return output_str
+
+
+def add_data_range(track: minidom.Element, doc: minidom.Document):
+    data_range = doc.createElement("DataRange")
+    track.appendChild(data_range)
+
+
+def add_coverage_track(bam_path: Path, panel: minidom.Element, doc: minidom.Document):
+    track = doc.createElement("Track")
+    track.setAttribute("attributeKey", f"{bam_path.name} Coverage")
+    track.setAttribute("autoScale", "true")
+    track.setAttribute("clazz", "org.broad.igv.sam.CoverageTrack")
+    track.setAttribute("fontSize", "10")
+    track.setAttribute("id", f"{str(bam_path)}_coverage")
+    track.setAttribute("name", f"{bam_path.name} Coverage")
+    track.setAttribute("snpThreshold", "0.2")
+    track.setAttribute("visible", "true")
+    panel.appendChild(track)
+    add_data_range(track, doc)
+
+
+def add_render_options(track: minidom.Element, doc: minidom.Document):
+    render_options = doc.createElement("RenderOptions")
+    track.appendChild(render_options)
+
+
+def add_alignment_track(bam_path: Path, panel: minidom.Element, doc: minidom.Document):
+    track = doc.createElement("Track")
+    track.setAttribute("attributeKey", f"{bam_path.name}")
+    track.setAttribute("clazz", "org.broad.igv.sam.AlignmentTrack")
+    track.setAttribute("color", "185,185,185")
+    track.setAttribute("experimentType", "THIRD_GEN")
+    track.setAttribute("fontSize", "10")
+    track.setAttribute("id", f"{str(bam_path)}")
+    track.setAttribute("name", f"{bam_path.name}")
+    track.setAttribute("visible", "true")
+    panel.appendChild(track)
+    add_render_options(track, doc)
+
+
 def add_panels_to_igv_session(doc: minidom.Document, bam_list: List[Path]):
     session = doc.getElementsByTagName('Session')[0]
     for idx, bam in enumerate(bam_list):
@@ -33,42 +76,16 @@ def add_panels_to_igv_session(doc: minidom.Document, bam_list: List[Path]):
         panel.setAttribute("width", "1663")
         session.appendChild(panel)
 
-        track1 = doc.createElement("Track")
-        track1.setAttribute("attributeKey", f"{bam.name} Coverage")
-        track1.setAttribute("autoScale", "true")
-        track1.setAttribute("clazz", "org.broad.igv.sam.CoverageTrack")
-        track1.setAttribute("fontSize", "10")
-        track1.setAttribute("id", f"{str(bam)}_coverage")
-        track1.setAttribute("name", f"{bam.name} Coverage")
-        track1.setAttribute("snpThreshold", "0.2")
-        track1.setAttribute("visible", "true")
-        panel.appendChild(track1)
-
-        data_range = doc.createElement("DataRange")
-        track1.appendChild(data_range)
-
-        track2 = doc.createElement("Track")
-        track2.setAttribute("attributeKey", f"{bam.name}")
-        track2.setAttribute("clazz", "org.broad.igv.sam.AlignmentTrack")
-        track2.setAttribute("color", "185,185,185")
-        track2.setAttribute("experimentType", "THIRD_GEN")
-        track2.setAttribute("fontSize", "10")
-        track2.setAttribute("id", f"{str(bam)}")
-        track2.setAttribute("name", f"{bam.name}")
-        track2.setAttribute("visible", "true")
-        panel.appendChild(track2)
-
-        render_options = doc.createElement("RenderOptions")
-        track2.appendChild(render_options)
+        add_coverage_track(bam, panel, doc)
+        add_alignment_track(bam, panel, doc)
 
     panel_attributes = doc.createElement("PanelLayout")
-    div_fracs = ", ".join([str(x/len(bam_list)) for x in range(1 + len(bam_list))])
-    panel_attributes.setAttribute("dividerFractions", div_fracs)
+    panel_attributes.setAttribute("dividerFractions", divider_frac_str(len(bam_list)))
     session.appendChild(panel_attributes)
 
 
 def doc_to_str(doc: minidom.Document) -> str:
-    xml_str = doc.toprettyxml(indent="\t")
+    xml_str = doc.toprettyxml(indent="\t", encoding="utf-8")
     return xml_str
 
 
@@ -84,5 +101,5 @@ if __name__ == "__main__":
     fasta_file = Path("pPRO-167-V2-0001.fasta")
     bam_file_list = [Path("pPRO-167-V2-0001_barcode09.bam"), Path("pPRO-167-V2-0001_barcode10.bam")]
     xml_str = create_igv_session(fasta_file, bam_file_list)
-    with open("igv_session.xml", "w") as f:
+    with open("igv_session.xml", "wb") as f:
         f.write(xml_str)
