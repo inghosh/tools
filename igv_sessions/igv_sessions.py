@@ -1,6 +1,7 @@
 from typing import List
 from pathlib import Path
 from xml.dom import minidom
+import argparse
 
 
 def initialize_igv_session(genome: Path) -> minidom.Document:
@@ -98,8 +99,12 @@ def create_igv_session(genome_path: Path, bam_path_list: List[Path]) -> str:
 
 
 if __name__ == "__main__":
-    fasta_file = Path("pPRO-167-V2-0001.fasta")
-    bam_file_list = [Path("pPRO-167-V2-0001_barcode09.bam"), Path("pPRO-167-V2-0001_barcode10.bam")]
+    parser_obj = argparse.ArgumentParser(description="Make an igv session xml")
+    parser_obj.add_argument("fasta", help="Path to fasta reference file")
+    parser_obj.add_argument("bam", help="Path to bam file of alignments")
+    args = parser_obj.parse_args()
+
+    fasta_file = Path(args.fasta)
+    bam_file_list = [Path(args.bam)]
     xml_str = create_igv_session(fasta_file, bam_file_list)
-    with open("igv_session.xml", "wb") as f:
-        f.write(xml_str)
+    print(xml_str.decode('utf-8'))
